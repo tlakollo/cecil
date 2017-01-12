@@ -17,6 +17,9 @@ namespace Mono.Cecil {
 	public interface IAssemblyResolver : IDisposable {
 		AssemblyDefinition Resolve (AssemblyNameReference name);
 		AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters);
+
+		AssemblyDefinition Resolve (string fullName);
+		AssemblyDefinition Resolve (string fullName, ReaderParameters parameters);
 	}
 
 	public interface IMetadataResolver {

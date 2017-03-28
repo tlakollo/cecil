@@ -157,7 +157,7 @@ namespace Mono.Cecil {
 		public abstract int Length { get; }
 
 		public bool IsLarge {
-			get { return Length > 65535; }
+			get { return Length > ushort.MaxValue; }
 		}
 
 		public abstract void Write (TableHeapBuffer buffer);
@@ -1008,6 +1008,7 @@ namespace Mono.Cecil {
 			BuildModule ();
 
 			table_heap.string_offsets = string_heap.WriteStrings ();
+			table_heap.ComputeTableInformations ();
 			table_heap.WriteTableHeap ();
 		}
 

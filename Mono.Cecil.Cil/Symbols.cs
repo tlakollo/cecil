@@ -739,8 +739,7 @@ namespace Mono.Cecil.Cil {
 
 		static string GetSymbolTypeName (SymbolKind kind, string name)
 		{
-			var ns = GetSymbolNamespace (kind);
-			return typeof (SymbolProvider).GetAssembly ().GetName ().Name + "." + ns + "." + kind + name;
+			return "Mono.Cecil" + "." + GetSymbolNamespace (kind) + "." + kind + name;
 		}
 
 		static string GetSymbolNamespace (SymbolKind kind)

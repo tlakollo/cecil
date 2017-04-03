@@ -1003,24 +1003,9 @@ namespace Mono.Cecil {
 			get { return Image != null && !Image.Debug.IsZero; }
 		}
 
-		public ImageDebugDirectory GetDebugHeader (out byte [] header)
+		public ImageDebugDirectory GetDebugHeader ()
 		{
-			if (!HasDebugHeader)
-				throw new InvalidOperationException ();
-
-			return Image.GetDebugHeader (out header);
-		}
-
-		void ProcessDebugHeader ()
-		{
-			if (!HasDebugHeader)
-				return;
-
-			byte [] header;
-			var directory = GetDebugHeader (out header);
-
-			if (!symbol_reader.ProcessDebugHeader (directory, header))
-				throw new InvalidOperationException ();
+			return Image.DebugHeader ?? new ImageDebugHeader ();
 		}
 
 #if !READ_ONLY
@@ -1100,7 +1085,10 @@ namespace Mono.Cecil {
 
 			symbol_reader = reader;
 
-			ProcessDebugHeader ();
+			if (!symbol_reader.ProcessDebugHeader (GetDebugHeader ())) {
+				symbol_reader = null;
+				throw new InvalidOperationException ();
+			}
 
 			if (HasImage && ReadingMode == ReadingMode.Immediate) {
 				var immediate_reader = new ImmediateModuleReader (Image);

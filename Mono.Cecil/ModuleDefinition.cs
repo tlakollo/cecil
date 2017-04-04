@@ -1016,11 +1016,15 @@ namespace Mono.Cecil {
 			if (!HasDebugHeader)
 				return;
 
-			byte [] header;
-			var directory = GetDebugHeader (out header);
+			try {
+				byte [] header;
+				var directory = GetDebugHeader (out header);
 
-			if (!symbol_reader.ProcessDebugHeader (directory, header))
-				throw new InvalidOperationException ();
+				if (!symbol_reader.ProcessDebugHeader (directory, header))
+					throw new InvalidOperationException ();
+			} finally {
+				symbol_reader = null;
+			}
 		}
 
 #if !READ_ONLY

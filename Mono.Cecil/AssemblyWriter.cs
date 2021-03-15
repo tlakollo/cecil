@@ -1441,7 +1441,8 @@ namespace Mono.Cecil {
 			if (type.HasInterfaces)
 				AddInterfaces (type);
 
-			AddLayoutInfo (type);
+			if (type.HasLayoutInfo)
+				AddLayoutInfo (type);
 
 			if (type.HasFields)
 				AddFields (type);
@@ -1560,36 +1561,12 @@ namespace Mono.Cecil {
 
 		void AddLayoutInfo (TypeDefinition type)
 		{
-			if (type.HasLayoutInfo) {
-				var table = GetTable<ClassLayoutTable> (Table.ClassLayout);
+			var table = GetTable<ClassLayoutTable> (Table.ClassLayout);
 
-				table.AddRow (new ClassLayoutRow (
-					(ushort) type.PackingSize,
-					(uint) type.ClassSize,
-					type.token.RID));
-
-				return;
-			}
-
-			if (type.IsValueType && HasNoInstanceField (type)) {
-				var table = GetTable<ClassLayoutTable> (Table.ClassLayout);
-
-				table.AddRow (new ClassLayoutRow (0, 1, type.token.RID));
-			}
-		}
-
-		static bool HasNoInstanceField (TypeDefinition type)
-		{
-			if (!type.HasFields)
-				return true;
-
-			var fields = type.Fields;
-
-			for (int i = 0; i < fields.Count; i++)
-				if (!fields [i].IsStatic)
-					return false;
-
-			return true;
+			table.AddRow (new ClassLayoutRow (
+				(ushort) type.PackingSize,
+				(uint) type.ClassSize,
+				type.token.RID));
 		}
 
 		void AddNestedTypes (TypeDefinition type)
@@ -2994,7 +2971,7 @@ namespace Mono.Cecil {
 				break;
 			case ElementType.None:
 				if (type.IsTypeOf ("System", "Type"))
-					WriteTypeReference ((TypeReference) value);
+					WriteCustomAttributeTypeValue ((TypeReference) value);
 				else
 					WriteCustomAttributeEnumValue (type, value);
 				break;
@@ -3002,6 +2979,27 @@ namespace Mono.Cecil {
 				WritePrimitiveValue (value);
 				break;
 			}
+		}
+
+		private void WriteCustomAttributeTypeValue (TypeReference value)
+		{
+			var typeDefinition = value as TypeDefinition;
+
+			if (typeDefinition != null) {
+				TypeDefinition outermostDeclaringType = typeDefinition;
+				while (outermostDeclaringType.DeclaringType != null)
+					outermostDeclaringType = outermostDeclaringType.DeclaringType;
+
+				// In CLR .winmd files, custom attribute arguments reference unmangled type names (rather than <CLR>Name)
+				if (WindowsRuntimeProjections.IsClrImplementationType (outermostDeclaringType)) {
+					WindowsRuntimeProjections.Project (outermostDeclaringType);
+					WriteTypeReference (value);
+					WindowsRuntimeProjections.RemoveProjection (outermostDeclaringType);
+					return;
+				}
+			}
+
+			WriteTypeReference (value);
 		}
 
 		void WritePrimitiveValue (object value)

@@ -94,7 +94,7 @@ namespace Mono.Cecil {
 			if (module.symbol_reader != null)
 				module.symbol_reader.Dispose ();
 
-			var name = module.assembly != null ? module.assembly.Name : null;
+			var name = module.assembly != null && module.kind != ModuleKind.NetModule ? module.assembly.Name : null;
 			var fq_name = stream.value.GetFileName ();
 			var timestamp = parameters.Timestamp ?? module.timestamp;
 			var symbol_writer_provider = parameters.SymbolWriterProvider;
@@ -1018,7 +1018,7 @@ namespace Mono.Cecil {
 
 			var assembly = module.Assembly;
 
-			if (assembly != null)
+			if (module.kind != ModuleKind.NetModule && assembly != null)
 				BuildAssembly ();
 
 			if (module.HasAssemblyReferences)
@@ -1035,7 +1035,7 @@ namespace Mono.Cecil {
 
 			BuildTypes ();
 
-			if (assembly != null) {
+			if (module.kind != ModuleKind.NetModule && assembly != null) {
 				if (assembly.HasCustomAttributes)
 					AddCustomAttributes (assembly);
 
@@ -2428,6 +2428,13 @@ namespace Mono.Cecil {
 		void AddEmbeddedSourceDebugInformation (ICustomDebugInformationProvider provider, EmbeddedSourceDebugInformation embedded_source)
 		{
 			var signature = CreateSignatureWriter ();
+
+			if (!embedded_source.resolved) {
+				signature.WriteBytes (embedded_source.ReadRawEmbeddedSourceDebugInformation ());
+				AddCustomDebugInformation (provider, embedded_source, signature);
+				return;
+			}
+
 			var content = embedded_source.content ?? Empty<byte>.Array;
 			if (embedded_source.compress) {
 				signature.WriteInt32 (content.Length);

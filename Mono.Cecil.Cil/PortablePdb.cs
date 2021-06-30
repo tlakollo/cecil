@@ -70,8 +70,20 @@ namespace Mono.Cecil.Cil {
 			if (image == module.Image)
 				return true;
 
-			var entry = header.GetCodeViewEntry ();
-			if (entry == null)
+			foreach (var entry in header.Entries) {
+				if (!IsMatchingEntry (image.PdbHeap, entry))
+					continue;
+
+				ReadModule ();
+				return true;
+			}
+
+			return false;
+		}
+
+		static bool IsMatchingEntry (PdbHeap heap, ImageDebugHeaderEntry entry)
+		{
+			if (entry.Directory.Type != ImageDebugType.CodeView)
 				return false;
 
 			var data = entry.Data;
@@ -88,15 +100,11 @@ namespace Mono.Cecil.Cil {
 
 			var module_guid = new Guid (buffer);
 
-			Buffer.BlockCopy (image.PdbHeap.Id, 0, buffer, 0, 16);
+			Buffer.BlockCopy (heap.Id, 0, buffer, 0, 16);
 
 			var pdb_guid = new Guid (buffer);
 
-			if (module_guid != pdb_guid)
-				return false;
-
-			ReadModule ();
-			return true;
+			return module_guid == pdb_guid;
 		}
 
 		static int ReadInt32 (byte [] bytes, int start)
@@ -301,7 +309,11 @@ namespace Mono.Cecil.Cil {
 			// PDB Age
 			buffer.WriteUInt32 (1);
 			// PDB Path
-			buffer.WriteBytes (System.Text.Encoding.UTF8.GetBytes (writer.BaseStream.GetFileName ()));
+			var fileName = writer.BaseStream.GetFileName ();
+			if (string.IsNullOrEmpty (fileName)) {
+				fileName = module.Assembly.Name.Name + ".pdb";
+			}
+			buffer.WriteBytes (System.Text.Encoding.UTF8.GetBytes (fileName));
 			buffer.WriteByte (0);
 
 			var data = new byte [buffer.length];

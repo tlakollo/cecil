@@ -109,7 +109,7 @@ namespace Mono.Cecil {
 			return sha1.Hash;
 		}
 
-		public static void CopyStreamChunk (Stream stream, Stream dest_stream, byte [] buffer, int length)
+		static void CopyStreamChunk (Stream stream, Stream dest_stream, byte [] buffer, int length)
 		{
 			while (length > 0) {
 				int read = stream.Read (buffer, 0, System.Math.Min (buffer.Length, length));

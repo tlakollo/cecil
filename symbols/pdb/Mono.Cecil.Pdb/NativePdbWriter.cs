@@ -44,15 +44,9 @@ namespace Mono.Cecil.Pdb {
 
 		public ImageDebugHeader GetDebugHeader ()
 		{
-			var entry_point = module.EntryPoint;
-			if (entry_point != null)
-				writer.SetUserEntryPoint (entry_point.MetadataToken.ToInt32 ());
-
 			ImageDebugDirectory directory;
 			var data = writer.GetDebugInfo (out directory);
 			directory.TimeDateStamp = (int) module.timestamp;
-
-			writer.Close ();
 			return new ImageDebugHeader (new ImageDebugHeaderEntry (directory, data));
 		}
 
@@ -261,6 +255,11 @@ namespace Mono.Cecil.Pdb {
 
 		public void Dispose ()
 		{
+			var entry_point = module.EntryPoint;
+			if (entry_point != null)
+				writer.SetUserEntryPoint (entry_point.MetadataToken.ToInt32 ());
+
+			writer.Close ();
 		}
 	}
 
